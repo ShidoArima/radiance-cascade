@@ -1,8 +1,7 @@
-Shader "Unlit/UV"
+Shader "Unlit/Debug/Radiance"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
     }
     SubShader
     {
@@ -31,30 +30,22 @@ Shader "Unlit/UV"
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
-
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
+            
+            sampler2D _RadianceMap;
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                
+                o.uv = v.uv;
                 return o;
             }
 
-            #define F16V2(f) float2(floor(f * 255.0) * float(0.0039215689), frac(f * 255.0))
-
             fixed4 frag(v2f i) : SV_Target
             {
-                float4 scene = tex2D(_MainTex, i.uv);
-                if (scene.a < 1)
-                    discard;
-
-                //return float4(F16V2(i.uv.x * scene.a), F16V2(i.uv.y * scene.a));
-
-                return float4(i.uv, 0, scene.a);
+                float4 scene = tex2D(_RadianceMap, i.uv);
+                
+                return scene;
             }
             ENDCG
         }

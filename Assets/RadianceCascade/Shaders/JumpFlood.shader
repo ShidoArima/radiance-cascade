@@ -4,7 +4,6 @@ Shader "Unlit/JumpFlood"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _JumpDistance("Jump Distance", Float) = 0
-
     }
     SubShader
     {
@@ -19,8 +18,6 @@ Shader "Unlit/JumpFlood"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 
@@ -33,20 +30,18 @@ Shader "Unlit/JumpFlood"
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            float4 _MainTex_TexelSize;
+            float4 _RenderSize;
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o, o.vertex);
                 return o;
             }
 
@@ -55,8 +50,10 @@ Shader "Unlit/JumpFlood"
 
             float2 getUV(float2 uv)
             {
-                return (uv * _MainTex_TexelSize.zw + 0.5f) * _MainTex_TexelSize.xy;
+                return (uv * _RenderSize.zw + 0.5f) * _RenderSize.xy;
             }
+
+            #define V2F16(v) ((v.y * float(0.0039215689)) + v.x)
 
             fixed4 frag(v2f i) : SV_Target
             {
@@ -79,20 +76,35 @@ Shader "Unlit/JumpFlood"
 
                 for (int index = 0; index < 9; index++)
                 {
-                    float2 jump = uv + offsets[index] * step * _MainTex_TexelSize.xy;
+                    float2 jump = uv + offsets[index] * step * _RenderSize.xy;
                     float4 seed = tex2Dlod(_MainTex, float4(jump.xy, 0, 0));
-
+                
                     if(seed.x == 0 || seed.y == 0)
                         continue;
                     
                     float dist = distance(seed.xy, uv);
-
+                
                     if (dist <= closest_dist)
                     {
                         closest_dist = dist;
                         closest_data = seed;
                     }
                 }
+
+                // for(int id = 0; id < 9; id++) {
+                //     float2 jump = i.uv + offsets[id] * float2(_JumpDistance * _RenderSize.xy);
+                //     float4 seed = tex2D(_MainTex, jump);
+                //     float2 seedpos = float2(V2F16(seed.xy), V2F16(seed.zw));
+                //     float dist = distance(seedpos * _RenderSize.zw, i.uv * _RenderSize.zw);
+                //
+                //     if(seed.x == 0 || seed.y == 0)
+                //          continue;
+                //     
+                //     if (dist <= closest_dist) {
+                //         closest_dist = dist;
+                //         closest_data = seed;
+                //     }
+                // }
 
                 return closest_data;
             }

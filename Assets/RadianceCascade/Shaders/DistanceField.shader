@@ -1,4 +1,4 @@
-Shader "Unlit/SDF"
+Shader "Unlit/DistanceField"
 {
     Properties
     {
@@ -39,6 +39,7 @@ Shader "Unlit/SDF"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             float4 _MainTex_TexelSize;
+            float4 _RenderSize;
             float2 _Scale;
 
             v2f vert(appdata v)
@@ -55,8 +56,17 @@ Shader "Unlit/SDF"
                 return float2(f, f);
             }
 
+            #define V2F16(v) ((v.y * float(0.0039215689)) + v.x)
+            #define F16V2(f) float2(floor(f * 255.0) * float(0.0039215689), frac(f * 255.0))
+
             fixed4 frag(v2f i) : SV_Target
             {
+                //float4 jfuv = tex2D(_MainTex, i.uv);
+                //float2 jumpflood = float2(V2F16(jfuv.rg),V2F16(jfuv.ba));
+	            // float dist = distance(i.uv * _RenderSize.zw, jumpflood * _RenderSize.zw);
+	            // float4 color = float4(F16V2(dist / length(_RenderSize.zw)), 0.0, 1.0);
+                //return color;
+                
                 float4 jumpUV = tex2D(_MainTex, i.uv);
                 if (jumpUV.x == 0 || jumpUV.y == 0)
                     discard;

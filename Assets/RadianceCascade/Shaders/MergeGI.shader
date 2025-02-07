@@ -9,7 +9,7 @@
       {
           float4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoord);
           float4 radiance = SAMPLE_TEXTURE2D(_RadianceMap, sampler_RadianceMap, i.texcoord);
-          color.rgb = saturate(color.rgb + radiance.rgb);
+          color.rgb = saturate(color.rgb * radiance.rgb);
 
           return color;
       }

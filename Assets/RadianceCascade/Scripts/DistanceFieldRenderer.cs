@@ -44,7 +44,7 @@ namespace RadianceCascade.Scripts
             GC.SuppressFinalize(this);
         }
 
-        public void Render(CommandBuffer buffer, RenderTargetIdentifier sceneTexture, int width, int height)
+        public void Render(CommandBuffer buffer, int width, int height)
         {
             RenderTextureDescriptor textureDescriptor = new RenderTextureDescriptor(width, height, GraphicsFormat.R16G16_UNorm, 0, 0);
 
@@ -58,7 +58,7 @@ namespace RadianceCascade.Scripts
 
             buffer.Blit(Texture2D.blackTexture, source);
             buffer.Blit(Texture2D.blackTexture, target);
-            buffer.Blit(sceneTexture, source, _jumpSeedMaterial);
+            buffer.Blit(Texture2D.blackTexture, source, _jumpSeedMaterial);
 
             var distance = height * (width / height);
             var jumpDistance = distance / 2;

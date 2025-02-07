@@ -17,17 +17,9 @@ namespace RadianceCascade.Postprocessing
     public sealed class RadianceCascadeEffect : PostProcessEffectRenderer<RadianceCascade>
     {
         private readonly RadianceCascadeRenderer _renderer = new();
-        private Shader _occluderShader;
-
+        
         private static readonly int Scene = Shader.PropertyToID("_SceneGI");
         private static readonly int DistanceScaleOffset = Shader.PropertyToID("_DistanceScaleOffset");
-
-        public override void Init()
-        {
-            base.Init();
-
-            _occluderShader = Shader.Find("Hidden/GI/Occluder");
-        }
 
         public override void Release()
         {
@@ -40,12 +32,12 @@ namespace RadianceCascade.Postprocessing
         {
             int width = context.width;
             int height = context.height;
-            context.command.GetTemporaryRT(Scene, width, height, 0);
-            RenderTargetIdentifier scene = new RenderTargetIdentifier(Scene);
+            //context.command.GetTemporaryRT(Scene, width, height, 0);
+            //RenderTargetIdentifier scene = new RenderTargetIdentifier(Scene);
 
             context.command.SetGlobalFloat(DistanceScaleOffset, settings.distanceScaleOffset);
-            context.command.Blit(context.source, scene);
-            _renderer.Render(context.command, scene, width, height, settings.linearSize);
+            //context.command.Blit(context.source, scene);
+            _renderer.Render(context.command, width, height, settings.linearSize);
 
             context.command.ReleaseTemporaryRT(Scene);
 

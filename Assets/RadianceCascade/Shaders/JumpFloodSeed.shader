@@ -35,6 +35,7 @@ Shader "Hidden/GI/JumpFloodSeed"
             };
 
             sampler2D _MainTex;
+            sampler2D _SceneTexture;
 
             v2f vert(appdata v)
             {
@@ -49,7 +50,7 @@ Shader "Hidden/GI/JumpFloodSeed"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float4 scene = tex2Dlod(_MainTex, float4(i.uv, 0, 1));
+                float4 scene = tex2Dlod(_SceneTexture, float4(i.uv, 0, 1));
                 if (scene.a < 1)
                     discard;
 

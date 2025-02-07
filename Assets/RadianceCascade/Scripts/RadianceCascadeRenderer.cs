@@ -114,11 +114,11 @@ namespace RadianceCascade.Scripts
             Shader.SetGlobalTexture(RadianceMap, Texture2D.blackTexture);
         }
 
-        public void Render(CommandBuffer buffer, RenderTargetIdentifier sceneTexture, int width, int height, float linearSize = 2)
+        public void Render(CommandBuffer buffer, int width, int height, float linearSize = 2)
         {
             InitializeInternal(width, height, linearSize);
 
-            _distanceFieldRenderer.Render(buffer, sceneTexture, width, height);
+            _distanceFieldRenderer.Render(buffer, width, height);
 
             buffer.GetTemporaryRT(RadianceCascadeN, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear);
             buffer.GetTemporaryRT(RadianceCascadeN1, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear);
@@ -135,7 +135,7 @@ namespace RadianceCascade.Scripts
             _cascadeMaterial.SetFloat(CascadeLinear, _radianceLinear);
             _cascadeMaterial.SetFloat(CascadeInterval, _radianceInterval);
 
-            buffer.SetGlobalTexture(SceneTexture, sceneTexture);
+            //buffer.SetGlobalTexture(SceneTexture, sceneTexture);
 
             for (var n = _radianceCascades - 1; n >= 0; n--)
             {

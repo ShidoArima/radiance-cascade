@@ -1,4 +1,4 @@
-Shader "Unlit/RadianCascades-Smooth"
+Shader "Hidden/GI/RadianCascades-Smooth"
 {
     Properties
     {
@@ -11,7 +11,7 @@ Shader "Unlit/RadianCascades-Smooth"
             "RenderType"="Opaque"
         }
         LOD 100
-        
+
         Blend Off
 
         Pass
@@ -37,8 +37,6 @@ Shader "Unlit/RadianCascades-Smooth"
             };
 
             sampler2D _MainTex;
-            float4 _MainTex_ST;
-            // Radiance Cascades Inputs:
             // Gameplay lights/occluders scene.
             sampler2D _SceneTexture;
             // Distance Field surface to sample from.
@@ -55,6 +53,7 @@ Shader "Unlit/RadianCascades-Smooth"
             float _CascadeLinear;
             // Ray interval length of cascade0.
             float _CascadeInterval;
+            float _DistanceScaleOffset;
 
             v2f vert(appdata v)
             {
@@ -68,29 +67,29 @@ Shader "Unlit/RadianCascades-Smooth"
             #define V2F16(v) (v.y * float(0.0039215689) + v.x)
             #define mod(x, y) (x - y * floor(x / y))
             #define EPS 0.00001
-            
+
             float4 raymarch(float2 origin, float2 dir, float interval)
             {
                 float rayDistance = 0.0;
                 const float scale = length(_RenderExtent);
-                
+
                 [loop]
                 for (float ii = 0.0; ii < interval; ii++)
                 {
                     const float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
-                    const float distance = V2F16(tex2D(_DistanceField, ray).rg);
-                    rayDistance += scale * distance;
+                    const float distance = V2F16(tex2Dlod(_DistanceField, float4(ray.xy, 0,0)).rg);
+                    rayDistance += scale * distance + _DistanceScaleOffset;
 
                     float2 rf = floor(ray);
 
-                    if(rf.x != 0 || rf.y != 0)
+                    if (rf.x != 0 || rf.y != 0)
                         break;
-                    
+
                     if (rayDistance >= interval)
                         break;
 
                     if (distance <= EPS)
-                        return float4(tex2D(_SceneTexture, ray).rgb, 0.0);
+                        return float4(tex2Dlod(_SceneTexture, float4(ray, 0, 0)).rgb, 0.0);
                 }
 
                 return float4(0.0, 0.0, 0, 1.0);
@@ -99,14 +98,14 @@ Shader "Unlit/RadianCascades-Smooth"
             float4 merge(float4 radiance, float index, float2 probe)
             {
                 //Ignore match found
-	            if (radiance.a == 0.0 || _CascadeIndex >= _CascadeCount - 1.0)
-		            return float4(radiance.rgb, 1.0 - radiance.a);
-                
-	            float angularN1 = pow(2.0, floor(_CascadeIndex + 1.0));
-	            float2 extentN1 = floor(_CascadeExtent / angularN1);
-	            float2 interpN1 = float2(mod(index, angularN1), floor(index / angularN1)) * extentN1;
-	            interpN1 += clamp(probe * 0.5 + 0.25, 0.5, extentN1 - 0.5);
-	            return radiance + tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
+                if (radiance.a == 0.0 || _CascadeIndex >= _CascadeCount - 1.0)
+                    return float4(radiance.rgb, 1.0 - radiance.a);
+
+                float angularN1 = pow(2.0, floor(_CascadeIndex + 1.0));
+                float2 extentN1 = floor(_CascadeExtent / angularN1);
+                float2 interpN1 = float2(mod(index, angularN1), floor(index / angularN1)) * extentN1;
+                interpN1 += clamp(probe * 0.5 + 0.25, 0.5, extentN1 - 0.5);
+                return radiance + tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
             }
 
             fixed4 frag(v2f i) : SV_Target
@@ -132,15 +131,15 @@ Shader "Unlit/RadianCascades-Smooth"
                     float preavg = index + float(id);
                     float angle = (preavg + 0.5) * (TAU / angular);
                     float2 delta = float2(cos(angle), -sin(angle));
-                    
-		            float2 ray = origin + delta * interval;
-		            float4 radiance = raymarch(ray, delta, limit);
-		            color += merge(radiance, preavg, probe.xy) * 0.25;
+
+                    float2 ray = origin + delta * interval;
+                    float4 radiance = raymarch(ray, delta, limit);
+                    color += merge(radiance, preavg, probe.xy) * 0.25;
                 }
 
                 if (_CascadeIndex == 0)
                     return float4(color.rgb, 1.0);
-                
+
                 return color;
             }
             ENDCG

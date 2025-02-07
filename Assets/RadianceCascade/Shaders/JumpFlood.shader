@@ -1,18 +1,16 @@
-Shader "Unlit/JumpFlood"
+Shader "Hidden/GI/JumpFlood"
 {
-    Properties
-    {
-        _MainTex ("Texture", 2D) = "white" {}
-        _JumpDistance("Jump Distance", Float) = 0
-    }
     SubShader
     {
         Tags
         {
             "RenderType"="Opaque"
         }
-        LOD 100
         
+        Cull Off
+        Lighting Off
+        ZWrite Off
+        ZTest Always
         Blend Off
 
         Pass
@@ -36,17 +34,15 @@ Shader "Unlit/JumpFlood"
             };
 
             sampler2D _MainTex;
-            float4 _MainTex_ST;
             float4 _RenderSize;
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv = v.uv;
                 return o;
             }
-
 
             float _JumpDistance;
 

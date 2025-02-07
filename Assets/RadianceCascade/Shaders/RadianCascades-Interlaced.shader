@@ -1,4 +1,4 @@
-Shader "Unlit/RadianCascades-Interlaced"
+Shader "Hidden/GI/RadianCascades-Interlaced"
 {
     Properties
     {
@@ -80,8 +80,8 @@ Shader "Unlit/RadianCascades-Interlaced"
                 [loop]
                 for (float ii = 0.0; ii < interval; ii++)
                 {
-                    const float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
-                    const float distance = V2F16(tex2D(_DistanceField, ray).rg);
+                    float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
+                    float distance = V2F16(tex2Dlod(_DistanceField, float4(ray.xy, 0, 0)).rg);
                     rayDistance += scale * distance;
 
                     float2 rf = floor(ray);

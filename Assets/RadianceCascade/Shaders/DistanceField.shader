@@ -1,17 +1,16 @@
-Shader "Unlit/DistanceField"
+Shader "Hidden/GI/DistanceField"
 {
-    Properties
-    {
-        _MainTex ("Texture", 2D) = "white" {}
-    }
     SubShader
     {
         Tags
         {
             "RenderType"="Opaque"
         }
-        LOD 100
         
+        Cull Off
+        Lighting Off
+        ZWrite Off
+        ZTest Always
         Blend Off
 
         Pass
@@ -35,15 +34,13 @@ Shader "Unlit/DistanceField"
             };
 
             sampler2D _MainTex;
-            float4 _MainTex_ST;
-            float4 _MainTex_TexelSize;
             float4 _RenderSize;
             
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv = v.uv;
                 return o;
             }
 
@@ -63,7 +60,7 @@ Shader "Unlit/DistanceField"
                 // float4 color = float4(F16V2(dist / length(_RenderSize.zw)), 0.0, 1.0);
                 // return color;
                 
-                float4 jumpUV = tex2D(_MainTex, i.uv);
+                float4 jumpUV = tex2Dlod(_MainTex, float4(i.uv, 0, 1));
                 // if (jumpUV.x == 0 || jumpUV.y == 0)
                 //     discard;
                 

@@ -33,6 +33,9 @@ MonoBehaviour:
   linearSize:
     overrideState: 1
     value: 2
-  distanceScaleOffset:
-    overrideState: 0
-    value: -4.8
+  ambient:
+    overrideState: 1
+    value: {r: 0.05, g: 0.0351, b: 0.039372966, a: 1}
+  gamma:
+    overrideState: 1
+    value: 1.4

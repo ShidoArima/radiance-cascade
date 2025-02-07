@@ -54,6 +54,7 @@ Shader "Hidden/GI/RadianCascades-Smooth"
             // Ray interval length of cascade0.
             float _CascadeInterval;
             float _DistanceScaleOffset;
+            float4 _AmbientColor;
 
             v2f vert(appdata v)
             {
@@ -138,7 +139,7 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                 }
 
                 if (_CascadeIndex == 0)
-                    return float4(color.rgb, 1.0);
+                    return float4(color.rgb, 1);
 
                 return color;
             }

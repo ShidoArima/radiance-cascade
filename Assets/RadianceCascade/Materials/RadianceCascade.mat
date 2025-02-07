@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RadianceCascade
-  m_Shader: {fileID: 4800000, guid: 9d0b3874c21e44098dd7a44ee0a2ad22, type: 3}
+  m_Shader: {fileID: 4800000, guid: de34ab118f774c87a385ca6c5c36c4aa, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []

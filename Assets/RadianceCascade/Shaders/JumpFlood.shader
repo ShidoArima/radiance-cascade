@@ -12,6 +12,8 @@ Shader "Unlit/JumpFlood"
             "RenderType"="Opaque"
         }
         LOD 100
+        
+        Blend Off
 
         Pass
         {
@@ -73,7 +75,7 @@ Shader "Unlit/JumpFlood"
 
                 float2 uv = i.uv;
                 float step = max(1, _JumpDistance);
-
+                
                 for (int index = 0; index < 9; index++)
                 {
                     float2 jump = uv + offsets[index] * step * _RenderSize.xy;
@@ -81,8 +83,8 @@ Shader "Unlit/JumpFlood"
                 
                     if(seed.x == 0 || seed.y == 0)
                         continue;
-                    
-                    float dist = distance(seed.xy, uv);
+
+                    const float dist = distance(seed.xy * _RenderSize.zw, uv * _RenderSize.zw);
                 
                     if (dist <= closest_dist)
                     {
@@ -90,7 +92,7 @@ Shader "Unlit/JumpFlood"
                         closest_data = seed;
                     }
                 }
-
+                
                 // for(int id = 0; id < 9; id++) {
                 //     float2 jump = i.uv + offsets[id] * float2(_JumpDistance * _RenderSize.xy);
                 //     float4 seed = tex2D(_MainTex, jump);

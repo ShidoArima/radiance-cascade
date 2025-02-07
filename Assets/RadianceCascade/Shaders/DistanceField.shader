@@ -3,7 +3,6 @@ Shader "Unlit/DistanceField"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _Scale ("Scale", Vector) = (1, 1, 1,1)
     }
     SubShader
     {
@@ -12,14 +11,14 @@ Shader "Unlit/DistanceField"
             "RenderType"="Opaque"
         }
         LOD 100
+        
+        Blend Off
 
         Pass
         {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 
@@ -32,7 +31,6 @@ Shader "Unlit/DistanceField"
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
             };
 
@@ -40,14 +38,12 @@ Shader "Unlit/DistanceField"
             float4 _MainTex_ST;
             float4 _MainTex_TexelSize;
             float4 _RenderSize;
-            float2 _Scale;
-
+            
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o, o.vertex);
                 return o;
             }
 
@@ -61,19 +57,19 @@ Shader "Unlit/DistanceField"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                //float4 jfuv = tex2D(_MainTex, i.uv);
-                //float2 jumpflood = float2(V2F16(jfuv.rg),V2F16(jfuv.ba));
-	            // float dist = distance(i.uv * _RenderSize.zw, jumpflood * _RenderSize.zw);
-	            // float4 color = float4(F16V2(dist / length(_RenderSize.zw)), 0.0, 1.0);
-                //return color;
+                // float4 jfuv = tex2D(_MainTex, i.uv);
+                // float2 jumpflood = float2(V2F16(jfuv.rg),V2F16(jfuv.ba));
+                // float dist = distance(i.uv * _RenderSize.zw, jumpflood * _RenderSize.zw);
+                // float4 color = float4(F16V2(dist / length(_RenderSize.zw)), 0.0, 1.0);
+                // return color;
                 
                 float4 jumpUV = tex2D(_MainTex, i.uv);
-                if (jumpUV.x == 0 || jumpUV.y == 0)
-                    discard;
-
-                float d = distance(i.uv * _MainTex_TexelSize.zw, jumpUV * _MainTex_TexelSize.zw);
-                float gradient = d / length(_MainTex_TexelSize.zw);
-                return float4(gradient.xxx, 1.0);
+                // if (jumpUV.x == 0 || jumpUV.y == 0)
+                //     discard;
+                
+                float d = distance(i.uv * _RenderSize.zw, jumpUV * _RenderSize.zw);
+                float gradient = d / length(_RenderSize.zw);
+                return float4(F16V2(gradient.x), 0, 1.0);
             }
             ENDCG
         }

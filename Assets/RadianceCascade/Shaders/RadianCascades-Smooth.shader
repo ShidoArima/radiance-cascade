@@ -1,4 +1,4 @@
-Shader "Unlit/RadianCascades-Interlaced"
+Shader "Unlit/RadianCascades-Smooth"
 {
     Properties
     {
@@ -11,6 +11,8 @@ Shader "Unlit/RadianCascades-Interlaced"
             "RenderType"="Opaque"
         }
         LOD 100
+        
+        Blend Off
 
         Pass
         {
@@ -63,10 +65,7 @@ Shader "Unlit/RadianCascades-Interlaced"
             }
 
             #define TAU 6.283185
-            #define PI (0.5 * TAU)
             #define V2F16(v) (v.y * float(0.0039215689) + v.x)
-            #define SRGB(c) pow(c.rgb, 2.2)
-            #define LINEAR(c) pow(c.rgb, 1.0 / 2.2)
             #define mod(x, y) (x - y * floor(x / y))
             #define EPS 0.00001
             
@@ -79,8 +78,8 @@ Shader "Unlit/RadianCascades-Interlaced"
                 for (float ii = 0.0; ii < interval; ii++)
                 {
                     const float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
-                    const float dd = tex2D(_DistanceField, ray).r;//V2F16(tex2D(_DistanceField, ray).rg);
-                    rayDistance += scale * dd;
+                    const float distance = V2F16(tex2D(_DistanceField, ray).rg);
+                    rayDistance += scale * distance;
 
                     float2 rf = floor(ray);
 
@@ -90,32 +89,24 @@ Shader "Unlit/RadianCascades-Interlaced"
                     if (rayDistance >= interval)
                         break;
 
-                    if (dd <= EPS)
-                        return float4(SRGB(tex2D(_SceneTexture, ray).rgb), 0.0);
+                    if (distance <= EPS)
+                        return float4(tex2D(_SceneTexture, ray).rgb, 0.0);
                 }
 
                 return float4(0.0, 0.0, 0, 1.0);
             }
 
-            float4 mergeNearestProbe(float4 radiance, float index, float2 probe)
+            float4 merge(float4 radiance, float index, float2 probe)
             {
-                if (radiance.a == 0.0 || _CascadeIndex >= _CascadeCount - 1.0)
-                    return float4(radiance.rgb, 1.0 - radiance.a);
-
-                float angularN1 = pow(2.0, floor(_CascadeIndex + 1.0));
-                float2 extentN1 = floor(_CascadeExtent / angularN1);
-                float2 interpN1 = float2(mod(index, angularN1), floor(index / angularN1)) * extentN1;
-                interpN1 += clamp(probe + 0.5, 0.5, extentN1 - 0.5);
-                return tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
-            }
-
-            void getInterlacedProbes(float2 probe, out float2 probes[4])
-            {
-                float2 probeN1 = floor((probe - 1.0) / 2.0);
-	            probes[2] = probeN1 + float2(0.0, 0.0);
-	            probes[1] = probeN1 + float2(1.0, 0.0);
-	            probes[0] = probeN1 + float2(0.0, 1.0);
-	            probes[3] = probeN1 + float2(1.0, 1.0);
+                //Ignore match found
+	            if (radiance.a == 0.0 || _CascadeIndex >= _CascadeCount - 1.0)
+		            return float4(radiance.rgb, 1.0 - radiance.a);
+                
+	            float angularN1 = pow(2.0, floor(_CascadeIndex + 1.0));
+	            float2 extentN1 = floor(_CascadeExtent / angularN1);
+	            float2 interpN1 = float2(mod(index, angularN1), floor(index / angularN1)) * extentN1;
+	            interpN1 += clamp(probe * 0.5 + 0.25, 0.5, extentN1 - 0.5);
+	            return radiance + tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
             }
 
             fixed4 frag(v2f i) : SV_Target
@@ -127,20 +118,11 @@ Shader "Unlit/RadianCascades-Interlaced"
                 float interval = _CascadeInterval * (1.0 - pow(4.0, _CascadeIndex)) / (1.0 - 4.0);
                 float limit = _CascadeInterval * pow(4.0, _CascadeIndex);
 
-                float2 linearN = _CascadeLinear * pow(2.0, _CascadeIndex);
-                float2 linearN1 = _CascadeLinear * pow(2.0, _CascadeIndex + 1.0);
+                float2 linear_pos = _CascadeLinear * pow(2.0, _CascadeIndex);
 
-                float2 origin = (probe.xy + 0.5) * linearN;
+                float2 origin = (probe.xy + 0.5) * linear_pos;
                 float angular = sqr_angular * sqr_angular * 4.0;
                 float index = (probe.z + probe.w * sqr_angular) * 4.0;
-
-	            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	            // Nearest Interlaced:
-	            float2 probesN1[4];
-	            getInterlacedProbes(probe.xy, probesN1);
-                float offset = probe.x * 2.0 + probe.y;
-                float2 probeN1 = probesN1[int(fmod(offset, 4.0))];
-	            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                 float4 color = float4(0, 0, 0, 0);
 
@@ -148,27 +130,16 @@ Shader "Unlit/RadianCascades-Interlaced"
                 for (float id = 0.0; id < 4.0; id++)
                 {
                     float preavg = index + float(id);
-                    float theta = (preavg + 0.5) * (TAU / angular);
-                    float thetaNm1 = (floor(preavg / 4.0) + 0.5) * (TAU / (angular / 4.0));
+                    float angle = (preavg + 0.5) * (TAU / angular);
+                    float2 delta = float2(cos(angle), -sin(angle));
                     
-                    float2 delta = float2(cos(theta), -sin(theta));
-                    float2 deltaNm1 = float2(cos(thetaNm1), -sin(thetaNm1));
-                    float2 ray_start = origin + deltaNm1 * interval;
-
-		            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		            /// Nearest Interlaced:
-		            float2 originN1 = (probeN1 + 0.5) * linearN1;
-		            float2 ray_end = originN1 + delta * (interval + limit);
-                    float len = length(ray_end - ray_start);
-		            float4 rad = raymarch(ray_start, normalize(ray_end - ray_start), len);
-		            rad = mergeNearestProbe(rad, preavg, probeN1);
-		            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-                    color += rad * 0.25;
+		            float2 ray = origin + delta * interval;
+		            float4 radiance = raymarch(ray, delta, limit);
+		            color += merge(radiance, preavg, probe.xy) * 0.25;
                 }
 
-                if (_CascadeIndex < 1.0)
-                    color = float4(LINEAR(color), 1.0);
+                if (_CascadeIndex == 0)
+                    return float4(color.rgb, 1.0);
                 
                 return color;
             }

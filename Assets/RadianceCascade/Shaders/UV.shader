@@ -11,6 +11,8 @@ Shader "Unlit/UV"
             "RenderType"="Opaque"
         }
         LOD 100
+        
+        Blend Off
 
         Pass
         {
@@ -54,7 +56,7 @@ Shader "Unlit/UV"
 
                 //return float4(F16V2(i.uv.x * scene.a), F16V2(i.uv.y * scene.a));
 
-                return float4(i.uv, 0, scene.a);
+                return float4(i.uv, 0, 0);
             }
             ENDCG
         }

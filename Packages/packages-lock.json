@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.shidon.radiance-cascade": {
+      "version": "file:com.shidon.radiance-cascade",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.postprocessing": "3.4.0",
+        "com.unity.inputsystem": "1.11.2"
+      }
+    },
     "com.unity.2d.animation": {
       "version": "10.1.4",
       "depth": 1,

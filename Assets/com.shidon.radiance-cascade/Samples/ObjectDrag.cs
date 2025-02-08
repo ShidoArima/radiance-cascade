@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace WindCompute
+namespace Samples
 {
     public class ObjectDrag : MonoBehaviour
     {

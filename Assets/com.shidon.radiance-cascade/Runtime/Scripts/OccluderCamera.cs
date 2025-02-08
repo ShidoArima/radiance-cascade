@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace RadianceCascade.Scripts
+namespace Shidon.RadianceCascade
 {
     [ExecuteInEditMode]
     public class OccluderCamera : MonoBehaviour

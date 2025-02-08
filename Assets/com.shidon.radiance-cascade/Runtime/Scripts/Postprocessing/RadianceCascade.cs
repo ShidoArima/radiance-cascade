@@ -1,9 +1,9 @@
 ﻿using System;
-using RadianceCascade.Scripts;
+using Shidon.RadianceCascade.Renderers;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 
-namespace RadianceCascade.Postprocessing
+namespace Shidon.RadianceCascade.Postprocessing
 {
     [Serializable]
     [PostProcess(typeof(RadianceCascadeEffect), PostProcessEvent.BeforeStack, "GI/RadianceCascade")]

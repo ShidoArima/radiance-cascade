@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
-namespace RadianceCascade.Scripts
+namespace Shidon.RadianceCascade.Renderers
 {
     public class RadianceCascadeRenderer : IDisposable
     {

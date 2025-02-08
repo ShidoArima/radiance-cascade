@@ -4,7 +4,7 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
-namespace RadianceCascade.Scripts
+namespace Shidon.RadianceCascade.Renderers
 {
     public sealed class DistanceFieldRenderer : IDisposable
     {

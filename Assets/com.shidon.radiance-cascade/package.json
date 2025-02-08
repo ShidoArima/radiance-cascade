@@ -1,0 +1,16 @@
+﻿{
+  "name": "com.shidon.radiance-cascade",
+  "version": "1.0.0",
+  "displayName": "Radiance Cascade",
+  "description": "Adaptation of 2D Radiance Cascade for Unity",
+  "unity": "6000.0",
+  "unityRelease": "26f1",
+  "dependencies": {
+    "com.unity.postprocessing": "3.4.0",
+    "com.unity.inputsystem": "1.11.2"
+  },
+  "author": {
+    "name": "Shidonski",
+    "email": "krasikovrn.is@gmail.com"
+  }
+}

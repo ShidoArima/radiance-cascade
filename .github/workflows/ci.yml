@@ -27,7 +27,7 @@ jobs:
         git push -u origin upm
       env:
         PKG_ROOT: Assets/com.shidon.radiance-cascade/
-    - name: Create upm git tag
+    - name: create upm git tag
       if: steps.semantic.outputs.new_release_published == 'true'
       run: |
         git tag $TAG upm

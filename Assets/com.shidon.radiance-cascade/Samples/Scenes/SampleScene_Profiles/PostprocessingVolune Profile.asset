@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d583469d0034d49ae3ed6ac7ff6c839, type: 3}
   m_Name: RadianceCascade
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   enabled:
     overrideState: 1
     value: 1

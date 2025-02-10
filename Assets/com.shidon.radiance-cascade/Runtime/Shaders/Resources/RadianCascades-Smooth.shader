@@ -54,7 +54,9 @@ Shader "Hidden/GI/RadianCascades-Smooth"
             // Ray interval length of cascade0.
             float _CascadeInterval;
             float _DistanceScaleOffset;
+
             float4 _AmbientColor;
+            float _RadianceIntensity = 1;
 
             v2f vert(appdata v)
             {
@@ -109,7 +111,7 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                 return radiance + tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            float4 frag(v2f i) : SV_Target
             {
                 float2 coord = floor(i.uv * _CascadeExtent);
                 float sqr_angular = pow(2.0, floor(_CascadeIndex));
@@ -135,11 +137,15 @@ Shader "Hidden/GI/RadianCascades-Smooth"
 
                     float2 ray = origin + delta * interval;
                     float4 radiance = raymarch(ray, delta, limit);
+                    radiance.rgb = pow(radiance.rgb, _RadianceIntensity);
                     color += merge(radiance, preavg, probe.xy) * 0.25;
                 }
 
                 if (_CascadeIndex == 0)
+                {
+                    color.rgb = pow(color.rgb, 1 / _RadianceIntensity);
                     return float4(color.rgb, 1);
+                }
 
                 return color;
             }

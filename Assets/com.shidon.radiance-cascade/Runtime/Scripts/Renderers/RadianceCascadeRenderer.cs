@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
@@ -25,8 +26,7 @@ namespace Shidon.RadianceCascade.Renderers
         private int _lastWidth;
         private int _lastHeight;
         private float _lastLinearSize;
-
-        private static readonly int SceneTexture = Shader.PropertyToID("_SceneTexture");
+        
         private static readonly int RenderExtent = Shader.PropertyToID("_RenderExtent");
         private static readonly int CascadeExtent = Shader.PropertyToID("_CascadeExtent");
         private static readonly int CascadeCount = Shader.PropertyToID("_CascadeCount");
@@ -120,8 +120,8 @@ namespace Shidon.RadianceCascade.Renderers
 
             _distanceFieldRenderer.Render(buffer, width, height);
 
-            buffer.GetTemporaryRT(RadianceCascadeN, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear);
-            buffer.GetTemporaryRT(RadianceCascadeN1, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear);
+            buffer.GetTemporaryRT(RadianceCascadeN, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat);
+            buffer.GetTemporaryRT(RadianceCascadeN1, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear, GraphicsFormat.R16G16B16A16_SFloat);
 
             RenderTargetIdentifier cascadeN = new RenderTargetIdentifier(RadianceCascadeN);
             RenderTargetIdentifier cascadeN1 = new RenderTargetIdentifier(RadianceCascadeN1);
@@ -134,8 +134,6 @@ namespace Shidon.RadianceCascade.Renderers
             _cascadeMaterial.SetFloat(CascadeCount, _radianceCascades);
             _cascadeMaterial.SetFloat(CascadeLinear, _radianceLinear);
             _cascadeMaterial.SetFloat(CascadeInterval, _radianceInterval);
-
-            //buffer.SetGlobalTexture(SceneTexture, sceneTexture);
 
             for (var n = _radianceCascades - 1; n >= 0; n--)
             {

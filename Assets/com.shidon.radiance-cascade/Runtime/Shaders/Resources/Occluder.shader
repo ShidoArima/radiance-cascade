@@ -74,6 +74,7 @@
             sampler2D _MainTex;
             sampler2D _AlphaTex;
             fixed4 _Color;
+            float _OccludeMultiplier = 1;
 
             fixed4 SampleSpriteTexture(float2 uv)
             {
@@ -170,6 +171,7 @@
 
             sampler2D _MainTex;
             fixed4 _Color;
+            float _OccludeMultiplier;
 
             v2f vert(appdata v)
             {
@@ -185,9 +187,97 @@
             fixed4 frag(v2f i) : SV_Target
             {
                 // sample the texture
-                fixed4 c = tex2D(_MainTex, i.texcoord) * i.color;
-                c.rgb *= c.a;
+                fixed4 c = i.color * tex2D(_MainTex, i.texcoord).a;
+                c.rgb *= i.color.a;
                 return c;
+            }
+            ENDCG
+        }
+    }
+    
+    SubShader
+    {
+        Cull Off
+        Lighting Off
+        ZWrite Off
+        Blend One OneMinusSrcAlpha
+
+        Tags
+        {
+            "Queue"="Transparent"
+            "IgnoreProjector"="True"
+            "RenderType"="Transparent"
+            "PreviewType"="Plane"
+            "CanUseSpriteAtlas"="True"
+            "Occluder" = "Mesh"
+        }
+
+        Pass
+        {
+            Tags
+            {
+                "Queue"="Transparent"
+                "IgnoreProjector"="True"
+                "RenderType"="Transparent"
+                "PreviewType"="Plane"
+                "Occluder" = "Wire"
+            }
+
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #pragma multi_compile_instancing
+
+            #include "UnityCG.cginc"
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                float4 color : COLOR;
+                float2 texcoord : TEXCOORD0;
+                float2 texcoord2 : TEXCOORD1;
+            };
+
+            struct v2f
+            {
+                float4 vertex : SV_POSITION;
+                fixed4 color : COLOR;
+                float2 texcoord : TEXCOORD0;
+                float2 texcoord2 : TEXCOORD1;
+            };
+
+            sampler2D _MainTex;
+            fixed4 _Color;
+            fixed4 _FlowColor;
+            float _Offset;
+            fixed4 _SmoothRange;
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.texcoord = v.texcoord;
+                o.texcoord2 = v.texcoord2;
+                o.color = v.color;
+
+                return o;
+            }
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                // sample the texture
+                fixed4 diffuse = tex2D(_MainTex, i.texcoord) * i.color;
+                
+                fixed flow = 1 - smoothstep(_Offset - _SmoothRange.x, _Offset + _SmoothRange.x, i.texcoord2.y);
+                fixed4 color = lerp(_Color, _FlowColor, flow) * diffuse;
+
+                color.rgb *= color.a;
+                return color;
             }
             ENDCG
         }

@@ -46,11 +46,6 @@ Shader "Hidden/GI/JumpFlood"
 
             float _JumpDistance;
 
-            float2 getUV(float2 uv)
-            {
-                return (uv * _RenderSize.zw + 0.5f) * _RenderSize.xy;
-            }
-
             #define V2F16(v) ((v.y * float(0.0039215689)) + v.x)
 
             fixed4 frag(v2f i) : SV_Target
@@ -88,21 +83,6 @@ Shader "Hidden/GI/JumpFlood"
                         closest_data = seed;
                     }
                 }
-                
-                // for(int id = 0; id < 9; id++) {
-                //     float2 jump = i.uv + offsets[id] * float2(_JumpDistance * _RenderSize.xy);
-                //     float4 seed = tex2D(_MainTex, jump);
-                //     float2 seedpos = float2(V2F16(seed.xy), V2F16(seed.zw));
-                //     float dist = distance(seedpos * _RenderSize.zw, i.uv * _RenderSize.zw);
-                //
-                //     if(seed.x == 0 || seed.y == 0)
-                //          continue;
-                //     
-                //     if (dist <= closest_dist) {
-                //         closest_dist = dist;
-                //         closest_data = seed;
-                //     }
-                // }
 
                 return closest_data;
             }

@@ -51,12 +51,12 @@ Shader "Hidden/GI/JumpFloodSeed"
             fixed4 frag(v2f i) : SV_Target
             {
                 float4 scene = tex2Dlod(_SceneTexture, float4(i.uv, 0, 1));
-                if (scene.a < 1)
-                    discard;
+
+                float a = step(0.2, scene.a);
 
                 //return float4(F16V2(i.uv.x * scene.a), F16V2(i.uv.y * scene.a));
 
-                return float4(i.uv, 0, 0);
+                return float4(i.uv * a, 0, 0);
             }
             ENDCG
         }

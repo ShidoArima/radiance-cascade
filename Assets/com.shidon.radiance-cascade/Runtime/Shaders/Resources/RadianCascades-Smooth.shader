@@ -53,9 +53,9 @@ Shader "Hidden/GI/RadianCascades-Smooth"
             float _CascadeLinear;
             // Ray interval length of cascade0.
             float _CascadeInterval;
-            float _DistanceScaleOffset;
 
             float4 _AmbientColor;
+            fixed4 _Ambient;
             float _RadianceIntensity = 1;
 
             v2f vert(appdata v)
@@ -71,6 +71,17 @@ Shader "Hidden/GI/RadianCascades-Smooth"
             #define mod(x, y) (x - y * floor(x / y))
             #define EPS 0.00001
 
+            // Gradient noise from Jorge Jimenez's presentation:
+            // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+            float GradientNoise(float2 uv)
+            {
+                uv = floor(uv * _ScreenParams.xy + _Time.x);
+                float f = dot(float2(0.06711056, 0.00583715), uv);
+                return frac(52.9829189 * frac(f));
+            }
+
+            #define ADD_GRADIENT_NOISE(c, uv) c += (1.0 / 255.0) * GradientNoise(uv) - (0.5 / 255.0);
+
             float4 raymarch(float2 origin, float2 dir, float interval)
             {
                 float rayDistance = 0.0;
@@ -80,8 +91,8 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                 for (float ii = 0.0; ii < interval; ii++)
                 {
                     const float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
-                    const float distance = V2F16(tex2Dlod(_DistanceField, float4(ray.xy, 0,0)).rg);
-                    rayDistance += scale * distance + _DistanceScaleOffset;
+                    const float distance = tex2Dlod(_DistanceField, float4(ray.xy, 0, 0)).r;
+                    rayDistance += scale * distance;
 
                     float2 rf = floor(ray);
 
@@ -92,10 +103,14 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                         break;
 
                     if (distance <= EPS)
-                        return float4(tex2Dlod(_SceneTexture, float4(ray, 0, 0)).rgb, 0.0);
+                    {
+                        float2 offset = dir * (2.0 / _RenderExtent);
+                        return float4(tex2Dlod(_SceneTexture, float4(ray + offset, 0, 0)).rgb, 0.0);
+                    }
+                        
                 }
 
-                return float4(0.0, 0.0, 0, 1.0);
+                return float4(_Ambient.rgb * _AmbientColor.a, 1.0);
             }
 
             float4 merge(float4 radiance, float index, float2 probe)
@@ -106,9 +121,11 @@ Shader "Hidden/GI/RadianCascades-Smooth"
 
                 float angularN1 = pow(2.0, floor(_CascadeIndex + 1.0));
                 float2 extentN1 = floor(_CascadeExtent / angularN1);
-                float2 interpN1 = float2(mod(index, angularN1), floor(index / angularN1)) * extentN1;
+                float2 interpN1 = float2(fmod(index, angularN1), floor(index / angularN1)) * extentN1;
                 interpN1 += clamp(probe * 0.5 + 0.25, 0.5, extentN1 - 0.5);
-                return radiance + tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
+
+                float4 radianceN1 = tex2D(_MainTex, interpN1 * (1.0 / _CascadeExtent));
+                return radiance + radianceN1;
             }
 
             float4 frag(v2f i) : SV_Target
@@ -116,7 +133,7 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                 float2 coord = floor(i.uv * _CascadeExtent);
                 float sqr_angular = pow(2.0, floor(_CascadeIndex));
                 float2 extent = floor(_CascadeExtent / sqr_angular);
-                float4 probe = float4(mod(coord, extent), floor(coord / extent));
+                float4 probe = float4(fmod(coord, extent), floor(coord / extent));
                 float interval = _CascadeInterval * (1.0 - pow(4.0, _CascadeIndex)) / (1.0 - 4.0);
                 float limit = _CascadeInterval * pow(4.0, _CascadeIndex);
 
@@ -143,6 +160,7 @@ Shader "Hidden/GI/RadianCascades-Smooth"
 
                 if (_CascadeIndex == 0)
                 {
+                    ADD_GRADIENT_NOISE(color, i.uv)
                     color.rgb = pow(color.rgb, 1 / _RadianceIntensity);
                     return float4(color.rgb, 1);
                 }

@@ -54,7 +54,7 @@ Shader "Hidden/GI/DistanceField"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float4 jumpUV = tex2Dlod(_MainTex, float4(i.uv, 0, 1));
+                float4 jumpUV = tex2Dlod(_MainTex, float4(i.uv, 0, 0));
                 float d = distance(i.uv * _RenderSize.zw, jumpUV * _RenderSize.zw);
                 float gradient = d / length(_RenderSize.zw);
                 return float4(gradient.xx, 0, 1.0);

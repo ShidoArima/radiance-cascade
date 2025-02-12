@@ -11,14 +11,10 @@ namespace Shidon.RadianceCascade
         [SerializeField] private Camera _mainCamera;
         [SerializeField] private float _linearSize = 2;
         [SerializeField] private Color _ambient = Color.black;
-        [SerializeField] float _gamma = 2;
         [SerializeField] private float _radianceIntensity = 1;
         [SerializeField] private float _radianceInterval = 1;
         [SerializeField] private float _linear = 1;
-        [SerializeField] private float _extent;
-
-        [SerializeField] private Texture2D _noiseTexture;
-        [SerializeField] private Vector2 _noiseScale;
+        [SerializeField] private int _extent = 50;
 
         private Camera _camera;
         private CommandBuffer _buffer;
@@ -27,10 +23,10 @@ namespace Shidon.RadianceCascade
         private Shader _occluderShader;
         private RenderTexture _sceneTexture;
 
+        private Vector2 _scale;
+
         private static readonly int SceneTexture = Shader.PropertyToID("_SceneTexture");
         private static readonly int RadianceMap = Shader.PropertyToID("_RadianceMap");
-        private static readonly int NoiseMap = Shader.PropertyToID("_NoiseMap");
-        private static readonly int NoiseScale = Shader.PropertyToID("_NoiseScale");
 
         private void Awake()
         {
@@ -39,10 +35,25 @@ namespace Shidon.RadianceCascade
             _buffer = new CommandBuffer();
             _buffer.name = "Radiance Cascade";
 
+            int width = Mathf.FloorToInt(_mainCamera.pixelWidth + _extent * _mainCamera.aspect);
+            int height = Mathf.FloorToInt(_mainCamera.pixelHeight + _extent);
+
+            var cascades = Mathf.CeilToInt(Mathf.Log(Vector2.Distance(Vector2.zero, new Vector2(width, height)), 4));
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //FIXES CASCADE RAY/PROBE TRADE-OFF ERROR RATE FOR NON-POW2 RESOLUTIONS: (very important).
+            var errorRate = Mathf.Pow(2, cascades - 1);
+            var errorX = Mathf.CeilToInt(width / errorRate);
+            var errorY = Mathf.CeilToInt(height / errorRate);
+            width = Mathf.FloorToInt(errorX * errorRate);
+            height = Mathf.FloorToInt(errorY * errorRate);
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             _occluderShader = Shader.Find("Hidden/GI/Occluder");
-            _sceneTexture = RenderTexture.GetTemporary(_mainCamera.pixelWidth, _mainCamera.pixelHeight, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
+            _sceneTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
             _sceneTexture.filterMode = FilterMode.Point;
 
+            _scale = new Vector2((float) width / _mainCamera.pixelWidth, (float) height / _mainCamera.pixelHeight);
             _camera.targetTexture = _sceneTexture;
         }
 
@@ -74,7 +85,7 @@ namespace Shidon.RadianceCascade
             if (currentCamera != _mainCamera)
                 return;
 
-            _camera.orthographicSize = _mainCamera.orthographicSize * (1 + _extent);
+            _camera.orthographicSize = _mainCamera.orthographicSize * _scale.y;
 
             _camera.RenderWithShader(_occluderShader, "Occluder");
             Shader.SetGlobalTexture(SceneTexture, _sceneTexture);
@@ -85,16 +96,12 @@ namespace Shidon.RadianceCascade
         {
             _buffer.Clear();
 
-            int width = _camera.pixelWidth;
-            int height = _camera.pixelHeight;
+            int width = _sceneTexture.width;
+            int height = _sceneTexture.height;
 
             _buffer.SetGlobalColor("_AmbientColor", _ambient);
-            _buffer.SetGlobalFloat("_Gamma", _gamma);
             _buffer.SetGlobalFloat("_RadianceIntensity", _radianceIntensity);
-            _buffer.SetGlobalFloat("_RadianceMapScale", 1 + _extent);
-
-            _buffer.SetGlobalTexture(NoiseMap, _noiseTexture);
-            _buffer.SetGlobalVector(NoiseScale, _noiseScale);
+            _buffer.SetGlobalVector("_RadianceMapScale", _scale);
 
             //Result _RadianceMap global texture to be used
             _renderer.Render(_buffer, width, height, _linearSize, _radianceInterval, _linear);

@@ -52,7 +52,7 @@ Shader "Hidden/GI/JumpFloodSeed"
             {
                 float4 scene = tex2Dlod(_SceneTexture, float4(i.uv, 0, 1));
 
-                float a = step(0.2, scene.a);
+                float a = step(0.1, scene.a);
 
                 //return float4(F16V2(i.uv.x * scene.a), F16V2(i.uv.y * scene.a));
 

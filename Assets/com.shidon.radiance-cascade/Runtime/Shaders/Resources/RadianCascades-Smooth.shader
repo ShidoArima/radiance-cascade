@@ -90,24 +90,20 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                 [loop]
                 for (float ii = 0.0; ii < interval; ii++)
                 {
-                    const float2 ray = (origin + dir * rayDistance) * (1.0 / _RenderExtent);
-                    const float distance = tex2Dlod(_DistanceField, float4(ray.xy, 0, 0)).r;
+                    const float2 ray = (origin + dir * rayDistance) / _RenderExtent;
+                    const float distance = tex2D(_DistanceField, ray.xy).r;
                     rayDistance += scale * distance;
 
                     float2 rf = floor(ray);
 
-                    if (rf.x != 0 || rf.y != 0)
-                        break;
-
-                    if (rayDistance >= interval)
+                    if (rf.x > 0 || rf.y > 0 || rayDistance >= interval)
                         break;
 
                     if (distance <= EPS)
                     {
-                        float2 offset = dir * (2.0 / _RenderExtent);
-                        return float4(tex2Dlod(_SceneTexture, float4(ray + offset, 0, 0)).rgb, 0.0);
+                        const float2 offset = ii < 0.25 ? 0 : dir * _CascadeLinear / _RenderExtent;
+                        return float4(tex2D(_SceneTexture, ray + offset).rgb, 0.0);
                     }
-                        
                 }
 
                 return float4(_Ambient.rgb * _AmbientColor.a, 1.0);
@@ -157,6 +153,8 @@ Shader "Hidden/GI/RadianCascades-Smooth"
                     radiance.rgb = pow(radiance.rgb, _RadianceIntensity);
                     color += merge(radiance, preavg, probe.xy) * 0.25;
                 }
+
+                //return float4(probe.xy / extent, 0, 1);
 
                 if (_CascadeIndex == 0)
                 {

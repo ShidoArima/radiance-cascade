@@ -69,7 +69,7 @@ Shader "Hidden/GI/JumpFlood"
                 
                 for (int index = 0; index < 9; index++)
                 {
-                    float2 jump = uv + offsets[index] * step * _RenderSize.xy;
+                    float2 jump = uv + offsets[index] * step / _RenderSize.zw;
                     float4 seed = tex2Dlod(_MainTex, float4(jump.xy, 0, 0));
                 
                     if(seed.x == 0 || seed.y == 0)

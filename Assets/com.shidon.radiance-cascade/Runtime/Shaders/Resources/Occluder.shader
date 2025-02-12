@@ -4,12 +4,14 @@
     {
         _MainTex ("Texture", 2D) = "white" {}
     }
+    
+    //Sprite
     SubShader
     {
         Cull Off
         Lighting Off
         ZWrite Off
-        Blend One OneMinusSrcAlpha
+        Blend One Zero
 
         Tags
         {
@@ -29,7 +31,8 @@
 
             #pragma multi_compile_instancing
             #pragma multi_compile _ ETC1_EXTERNAL_ALPHA
-            #pragma shader_feature _ AMBIENT_ENABLED
+            #pragma multi_compile _ AMBIENT_ENABLED
+            #pragma multi_compile _ OCCLUDER_MASK
 
             #include "UnityCG.cginc"
 
@@ -74,7 +77,7 @@
             sampler2D _MainTex;
             sampler2D _AlphaTex;
             fixed4 _Color;
-            float _OccludeMultiplier = 1;
+            float _Emission = 1;
 
             fixed4 SampleSpriteTexture(float2 uv)
             {
@@ -112,19 +115,28 @@
             {
                 // sample the texture
                 fixed4 c = SampleSpriteTexture(i.texcoord) * i.color;
-                c.rgb *= c.a;
+                c.a = step(0.25, c.a);
+                clip(c.a - 0.1);
+                
+                #ifdef OCCLUDER_MASK
+                c = fixed4(0, 0, 0, 0);
+                #else
+                c.rgb *= _Emission;
+                #endif
+                
                 return c;
             }
             ENDCG
         }
     }
 
+    //Mesh
     SubShader
     {
         Cull Off
         Lighting Off
         ZWrite Off
-        Blend One OneMinusSrcAlpha
+        Blend One Zero
 
         Tags
         {
@@ -138,15 +150,6 @@
 
         Pass
         {
-            Tags
-            {
-                "Queue"="Transparent"
-                "IgnoreProjector"="True"
-                "RenderType"="Transparent"
-                "PreviewType"="Plane"
-                "Occluder" = "Mesh"
-            }
-
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -171,7 +174,7 @@
 
             sampler2D _MainTex;
             fixed4 _Color;
-            float _OccludeMultiplier;
+            float _Emission;
 
             v2f vert(appdata v)
             {
@@ -187,20 +190,23 @@
             fixed4 frag(v2f i) : SV_Target
             {
                 // sample the texture
-                fixed4 c = i.color * tex2D(_MainTex, i.texcoord).a;
-                c.rgb *= i.color.a;
+                fixed4 c = i.color;
+                c.a = step(0.0025, c.a * tex2D(_MainTex, i.texcoord).a);
+                clip(c.a);
+                c.rgb *= _Emission;
                 return c;
             }
             ENDCG
         }
     }
-    
+
+    //Wire
     SubShader
     {
         Cull Off
         Lighting Off
         ZWrite Off
-        Blend One OneMinusSrcAlpha
+        Blend One Zero
 
         Tags
         {
@@ -208,21 +214,11 @@
             "IgnoreProjector"="True"
             "RenderType"="Transparent"
             "PreviewType"="Plane"
-            "CanUseSpriteAtlas"="True"
-            "Occluder" = "Mesh"
+            "Occluder" = "Wire"
         }
 
         Pass
         {
-            Tags
-            {
-                "Queue"="Transparent"
-                "IgnoreProjector"="True"
-                "RenderType"="Transparent"
-                "PreviewType"="Plane"
-                "Occluder" = "Wire"
-            }
-
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -252,6 +248,7 @@
             fixed4 _FlowColor;
             float _Offset;
             fixed4 _SmoothRange;
+            float _Emission;
 
             v2f vert(appdata v)
             {
@@ -272,11 +269,14 @@
             {
                 // sample the texture
                 fixed4 diffuse = tex2D(_MainTex, i.texcoord) * i.color;
-                
+
                 fixed flow = 1 - smoothstep(_Offset - _SmoothRange.x, _Offset + _SmoothRange.x, i.texcoord2.y);
                 fixed4 color = lerp(_Color, _FlowColor, flow) * diffuse;
 
-                color.rgb *= color.a;
+                color.a = step(0.02, color.a);
+                clip(color.a);
+
+                color.rgb *= color.a * _Emission;
                 return color;
             }
             ENDCG

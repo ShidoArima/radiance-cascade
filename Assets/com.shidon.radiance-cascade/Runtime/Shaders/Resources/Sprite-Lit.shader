@@ -59,6 +59,26 @@ Shader "Sprites/Default-Lit"
             float _EnableExternalAlpha;
             CBUFFER_END
 
+            sampler2D _MainTex;
+            sampler2D _AlphaTex;
+            sampler2D _RadianceMap;
+            fixed4 _Color;
+            
+            float2 _RadianceMapScale;
+
+            float3 GetRadiance(float4 uv)
+            {
+                float2 sceneCoord = uv.xy / _RadianceMapScale;
+                sceneCoord += (1 - 1 / _RadianceMapScale) * 0.5f;
+
+                float3 radiance = tex2Dproj(_RadianceMap, float4(sceneCoord.xy, uv.z, uv.w)).rgb;
+                return radiance;
+            }
+
+            #define LIGHT_COORD(index) float4 lightcoord : TEXCOORD##index;
+            #define COMPUTE_LIGHT_UV(output, pos) output.lightcoord = ComputeScreenPos(pos);
+            #define APPLY_RADIANCE(color, input) color.rgb *= GetRadiance(input.lightcoord);
+
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -72,14 +92,9 @@ Shader "Sprites/Default-Lit"
                 float4 vertex : SV_POSITION;
                 fixed4 color : COLOR;
                 float2 texcoord : TEXCOORD0;
-                float4 lightcoord: TEXCOORD1;
+                LIGHT_COORD(1)
                 UNITY_VERTEX_OUTPUT_STEREO
             };
-
-            sampler2D _MainTex;
-            sampler2D _AlphaTex;
-            sampler2D _RadianceMap;
-            fixed4 _Color;
 
             fixed4 SampleSpriteTexture(float2 uv)
             {
@@ -109,7 +124,7 @@ Shader "Sprites/Default-Lit"
                 o.vertex = UnityObjectToClipPos(o.vertex);
                 o.texcoord = v.texcoord;
 
-                o.lightcoord = ComputeScreenPos(o.vertex);
+                COMPUTE_LIGHT_UV(o, o.vertex)
                 o.color = v.color * _Color * _RendererColor;
 
                 return o;
@@ -117,10 +132,11 @@ Shader "Sprites/Default-Lit"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 radiance = tex2Dproj(_RadianceMap, i.lightcoord);
                 // sample the texture
                 fixed4 c = SampleSpriteTexture(i.texcoord) * i.color;
-                c.rgb *= radiance.rgb * c.a;
+
+                APPLY_RADIANCE(c, i)
+                c.rgb *= c.a;
                 return c;
             }
             ENDCG

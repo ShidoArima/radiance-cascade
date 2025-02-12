@@ -4,6 +4,7 @@ Shader "Sprites/Default-Occluder"
     {
         [PerRendererData] _MainTex ("Texture", 2D) = "white" {}
         _Color ("Main Color", Color) = (1,1,1,1)
+        _Emission ("Emission", Float) = 1
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _Flip ("Flip", Vector) = (1,1,1,1)
         [PerRendererData] _AlphaTex ("External Alpha", 2D) = "white" {}
@@ -79,6 +80,7 @@ Shader "Sprites/Default-Occluder"
             sampler2D _MainTex;
             sampler2D _AlphaTex;
             fixed4 _Color;
+            float _Emission;
 
             fixed4 SampleSpriteTexture(float2 uv)
             {

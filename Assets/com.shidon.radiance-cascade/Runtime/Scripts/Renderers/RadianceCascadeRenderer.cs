@@ -90,15 +90,6 @@ namespace Shidon.RadianceCascade.Renderers
             _radianceLinear   = PowerOfN(linearSize, 2);
             _radianceInterval = MultipleOfN(renderInterval, 2);
 
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //FIXES CASCADE RAY/PROBE TRADE-OFF ERROR RATE FOR NON-POW2 RESOLUTIONS: (very important).
-            var errorRate = Mathf.Pow(2, _radianceCascades - 1);
-            var errorX    = Mathf.CeilToInt(_renderWidth / errorRate);
-            var errorY    = Mathf.CeilToInt(_renderHeight / errorRate);
-            _renderWidth  = Mathf.FloorToInt(errorX * errorRate);
-            _renderHeight = Mathf.FloorToInt(errorY * errorRate);
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
             _radianceWidth  = Mathf.FloorToInt(_renderWidth / _radianceLinear);
             _radianceHeight = Mathf.FloorToInt(_renderHeight / _radianceLinear);
         }
@@ -116,9 +107,10 @@ namespace Shidon.RadianceCascade.Renderers
 
         public void Render(CommandBuffer buffer, int width, int height, float linearSize = 2, float interval = 1, float linear = 1)
         {
+            linearSize = Mathf.Max(0.25f, linearSize);
             InitializeInternal(width, height, linearSize);
 
-            _distanceFieldRenderer.Render(buffer, _radianceWidth, _radianceHeight);
+            _distanceFieldRenderer.Render(buffer, width, height);
             
             buffer.GetTemporaryRT(RadianceCascadeN, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
             buffer.GetTemporaryRT(RadianceCascadeN1, _radianceWidth, _radianceHeight, 0, FilterMode.Bilinear, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
@@ -134,7 +126,7 @@ namespace Shidon.RadianceCascade.Renderers
             _cascadeMaterial.SetFloat(CascadeCount, _radianceCascades);
             _cascadeMaterial.SetFloat(CascadeLinear, _radianceLinear * linear);
             _cascadeMaterial.SetFloat(CascadeInterval, _radianceInterval * interval);
-
+            
             for (var n = _radianceCascades - 1; n >= 0; n--)
             {
                 buffer.SetGlobalFloat(CascadeIndex, n);
@@ -142,7 +134,7 @@ namespace Shidon.RadianceCascade.Renderers
                 buffer.Blit(cascadeN1, cascadeN, _cascadeMaterial);
                 buffer.CopyTexture(cascadeN, cascadeN1);
             }
-
+            
             buffer.SetGlobalTexture(RadianceMap, cascadeN);
         }
 

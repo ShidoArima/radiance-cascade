@@ -4,6 +4,7 @@ Shader "Sprites/Default-Lit"
     {
         [PerRendererData] _MainTex ("Texture", 2D) = "white" {}
         _Color ("Main Color", Color) = (1,1,1,1)
+        _LightInfluence ("Light Influence", Float) = 1
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _Flip ("Flip", Vector) = (1,1,1,1)
         [PerRendererData] _AlphaTex ("External Alpha", 2D) = "white" {}
@@ -35,7 +36,10 @@ Shader "Sprites/Default-Lit"
             #pragma multi_compile _ ETC1_EXTERNAL_ALPHA
             #pragma shader_feature _ AMBIENT_ENABLED
 
+            #define LIGHTING_GI_ENABLED
+
             #include "UnityCG.cginc"
+            #include "../Include/Lighting.cginc"
 
             #ifdef UNITY_INSTANCING_ENABLED
             
@@ -61,23 +65,7 @@ Shader "Sprites/Default-Lit"
 
             sampler2D _MainTex;
             sampler2D _AlphaTex;
-            sampler2D _RadianceMap;
             fixed4 _Color;
-            
-            float2 _RadianceMapScale;
-
-            float3 GetRadiance(float4 uv)
-            {
-                float2 sceneCoord = uv.xy / _RadianceMapScale;
-                sceneCoord += (1 - 1 / _RadianceMapScale) * 0.5f;
-
-                float3 radiance = tex2Dproj(_RadianceMap, float4(sceneCoord.xy, uv.z, uv.w)).rgb;
-                return radiance;
-            }
-
-            #define LIGHT_COORD(index) float4 lightcoord : TEXCOORD##index;
-            #define COMPUTE_LIGHT_UV(output, pos) output.lightcoord = ComputeScreenPos(pos);
-            #define APPLY_RADIANCE(color, input) color.rgb *= GetRadiance(input.lightcoord);
 
             struct appdata
             {
